@@ -2,19 +2,21 @@ use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::*;
 
 pub mod graphics;
+use graphics::api::api::GraphicsAPI;
+use graphics::api::gl::GLContext;
 
 // main
 fn main() {
 	unsafe {
 		let event_loop: EventLoop<()> = EventLoop::new();
 		let window = glutin::ContextBuilder::new()
-				.build_windowed(
-					glutin::window::WindowBuilder::new().with_title("tetris").with_inner_size(glutin::dpi::LogicalSize::new(600., 400.)), &event_loop
-				).unwrap().make_current().unwrap();
+			.build_windowed(
+				glutin::window::WindowBuilder::new().with_title("tetris").with_inner_size(glutin::dpi::LogicalSize::new(600., 400.)), &event_loop
+			).unwrap().make_current().unwrap();
 
-		let mut g: Box<dyn graphics::api::api::GraphicsAPI> = Box::<graphics::api::gl::GLContext>::new(graphics::api::gl::GLContext::new(&window));
+		// Sets everything up
+		let mut g: Box<dyn GraphicsAPI> = Box::<GLContext>::new(GLContext::new(&window));
 		g.setup();
-		
 
 		event_loop.run(move |event, _, control_flow| {
 			*control_flow = ControlFlow::Wait;

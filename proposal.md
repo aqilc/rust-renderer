@@ -4,6 +4,7 @@ Is subject to change based on discussion.
 - [Current Solution to Syntax:](#current-solution-to-syntax)
   - [Proposal 1: New Format](#proposal-1-new-format)
   - [Proposal 2: Loader](#proposal-2-loader)
+  - [Proposal 3: Naming Conventions](#proposal-3-naming-conventions)
 
 ## Proposal 1: New Format
 
@@ -93,4 +94,49 @@ We could add additional utilities like scheduling and dynamic loading, like we h
 ## Proposal 3: Naming Conventions
 
 Firstly, we'd remove the currently active keyword `keyword2` completely, and only have styles based on the base keyword. Some examples:
-  - 
+  
+  - `rust.symbols["Option"]`: `literal` -> `keyword.builtin.type.logic`
+  - `rust.symbols["use"]`: `keyword` -> `keyword.builtin.import`
+  - `rust.symbols["u16"]`: `keyword2` -> `keyword.builtin.type.number`
+  - `javascript.symbols["const"]`: `keyword` -> `keyword.builtin.declaration.variable`
+
+### Reasoning:
+
+- `literal` vs `keyword`
+  - Literals are values that have reserved names for values in that language, like `true`, `false`, `undefined`, `null` or `None`. Keywords on the other hand, is any name for an operation, or declaration, whether the symbol was the thing being declared or the thing declaring. Keywords can be user defined, like in `const name = "hello"`, `const` and `name` are both keywords. The definition is being stretched to this degree since the existing highlighting system used originally in Lite used `keyword` and `keyword2` in this way.
+  - `keyword.builtin.*` is any **language defined** reserved symbol. `keyword.*` is for **user defined** names or symbols.
+
+### Proposed names:
+
+- `keyword`
+  - `keyword.builtin`
+    - `keyword.builtin.import`
+    - `keyword.builtin.type`
+    - `keyword.builtin.declaration`
+    - `keyword.builtin.operator`
+    - `keyword.builtin.conditional`
+    - `keyword.builtin.loop`
+    - `keyword.builtin.return`
+  - `keyword.property`
+  - `keyword.variable`
+    - `keyword.variable.const`
+  - `keyword.param`
+    - `keyword.param.self`
+  - `keyword.type`
+    - `keyword.type.struct`
+    - `keyword.type.enum`
+    - `keyword.type.interface`
+    - `keyword.type.trait`
+    - `keyword.type.class`
+  - `keyword.logic`
+- `operator`
+  - `operator.unary`
+  - `operator.binary`
+  - `operator.tertiary`
+- `literal`
+  - `literal.boolean`
+  - `literal.null`
+- `number`
+  - `number.prefix`
+  - `number.suffix`
+
