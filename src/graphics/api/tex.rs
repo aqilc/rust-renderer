@@ -2,6 +2,7 @@ use fontdue::*;
 use std::collections::HashMap;
 use std::fs::*;
 
+
 // ------- Vector Datatypes -------
 #[derive(Default, Copy, Clone)]
 pub struct Vec2<T> {
@@ -47,16 +48,17 @@ impl FontAtlas {
 	fn load(path: &str) -> Self {
 		let file: Vec<u8> = read(path).unwrap();
 		let font = Font::from_bytes(file, FontSettings::default()).unwrap();
-		let mut lookup = HashMap::<String, GlyphAttributes>::new();
+		let mut lookup = HashMap::<String, Box<GlyphAttributes>>::new();
 		let mut places = Node::new(Vec2::<u32>::default(), *FontAtlas::STARTINGSIZE);
 		let mut tex = Tex::new(FontAtlas::STARTINGSIZE.x as usize, FontAtlas::STARTINGSIZE.y as usize, Channels::GRAYSCALE);
 		
 		for i in FontAtlas::DEFAULTCHARS.chars() {
 			let (metrics, bitmap) = font.rasterize(i, 48.0);
+			let pos = places.pack(&Vec2::<u32> { x: metrics.width as u32, y: metrics.height as u32 }).unwrap().pos;
 
 			lookup.insert(String::from(i), Box::<GlyphAttributes>::new(GlyphAttributes {
 				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
-				advance_x: metrics.advance_width / 16.0
+				pos: Vec2::<u16> { x: pos.x as u16, y: pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
 			}));
 		}
 
