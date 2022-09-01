@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use glow::*;
 use crate::graphics::api::api::GraphicsAPI;
+use crate::graphics::api::api::Vec2;
 
 
 pub struct ShapeData {
-	pub pos: [f32; 2],
-	pub tex: [f32; 2],
+	pub pos: Vec2<f32>,
+	pub tex: Vec2<f32>,
 	pub col: [f32; 4]
 	
 }
@@ -58,7 +59,8 @@ impl Layout {
 
 const TEXTUREH: f32 = 512.0;
 const TEXTUREW: f32 = 512.0;
-const TEXCOORDS: [[f32; 2]; 4] = [[1.0 - 2.5 / TEXTUREW, 1.0 - 2.5 / TEXTUREH], [1.0 - 2.5 / TEXTUREW, 1.0], [1.0, 1.0 - 2.5 / TEXTUREH], [1.0, 1.0]];
+const TEXCOORDS: [Vec2<f32>; 4] = [Vec2::<f32>::new(1.0 - 2.5 / TEXTUREW, 1.0 - 2.5 / TEXTUREH),
+	Vec2::<f32>::new(1.0 - 2.5 / TEXTUREW, 1.0), Vec2::<f32>::new(1.0, 1.0 - 2.5 / TEXTUREH), Vec2::<f32>::new(1.0, 1.0)];
 impl GLContext {
 	pub unsafe fn new(window: &glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>) -> Self {
 		GLContext {
@@ -68,7 +70,7 @@ impl GLContext {
 			uniforms: HashMap::<String, i32>::new() }
 	}
 
-	pub fn push_shape(&mut self, points: Vec<[f32; 2]>, color: [f32; 4], index: Vec<u32>) -> &mut Self {
+	pub fn push_shape(&mut self, points: Vec<Vec2<f32>>, index: Vec<u32>, color: [f32; 4]) -> &mut Self {
 
 		// Stores length of shapedata so we can add it to each of the indexes later
 		let len = self.shapedata.len();
@@ -155,6 +157,12 @@ impl GraphicsAPI for GLContext {
 	unsafe fn destroy(&mut self) {
 		self.gl.delete_program(self.program.unwrap());
 		self.gl.delete_vertex_array(self.va.unwrap());
+	}
+
+	unsafe fn rect(&mut self, x: f32, y: f32, w: f32, h: f32) {
+		self.push_shape(Vec::<Vec2<f32>>::from([
+			Vec2::<f32> { x, y }
+		]), );
 	}
 }
 

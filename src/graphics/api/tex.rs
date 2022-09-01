@@ -2,6 +2,7 @@ use fontdue::*;
 use std::collections::HashMap;
 use std::fs::*;
 
+
 // ------- Vector Datatypes -------
 #[derive(Default, Copy, Clone)]
 pub struct Vec2<T> {
