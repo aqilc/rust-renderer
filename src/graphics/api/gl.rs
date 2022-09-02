@@ -3,7 +3,7 @@ use glow::*;
 use crate::graphics::api::api::GraphicsAPI;
 use crate::graphics::api::api::Vec2;
 
-
+#[derive(Debug)]
 pub struct ShapeData {
 	pub pos: Vec2<f32>,
 	pub tex: Vec2<f32>,
@@ -21,8 +21,11 @@ pub struct GLContext {
 }
 
 
+#[derive(Debug)]
 pub enum OpenGLType { Float, Integer, Char }
+#[derive(Debug)]
 pub struct LayoutType { typeenum: OpenGLType, count: u8 }
+#[derive(Debug)]
 pub struct Layout {
 	types: Vec<LayoutType>,
 	pub stride: i32
@@ -30,17 +33,17 @@ pub struct Layout {
 
 
 impl Layout {
-	pub fn new() -> Self {
+	pub const fn new() -> Self {
 		Layout { types: Vec::<LayoutType>::new(), stride: 0 }
 	}
 	pub fn addf(&mut self, count: u8) -> &mut Self {
 		self.types.push(LayoutType { count, typeenum: OpenGLType::Float });
-		self.stride += 4;
+		self.stride += 4 * count as i32;
 		self
 	}
 	pub fn addi(&mut self, count: u8) -> &mut Self {
 		self.types.push(LayoutType { count, typeenum: OpenGLType::Integer });
-		self.stride += 4;
+		self.stride += 4 * count as i32;
 		self
 	}
 
@@ -87,7 +90,7 @@ impl GLContext {
 		// Adds every index to the whole index buffer, and since we're appending the shapes, we're adding the length of the shape buffer so the indexes are referencing the proper shapes
 		for i in 0..index.len() {
 			self.indexdata.push(len as u32 + index[i]); }
-				
+		
 		self
 	}
 	
@@ -138,31 +141,82 @@ impl GraphicsAPI for GLContext {
 
 		// Creates a vertex array and loads shaders
 		self.va = Some(self.gl.create_vertex_array().expect("bruh why won't VA form"));
-		self.program = Some(self.load_shaders(include_str!("../../../res/shaders.glsl")));
 
 		// Binds the vertex array so we can put the layout on it
 		self.gl.bind_vertex_array(self.va);
 
 		// Makes a new layout, and then adds it thru gl attrib array ptrs
-		Layout::new().addf(2).addf(2).addf(4).apply(&self.gl);
+		Layout::new().addf(2).addf(2).addf(4).apply(&self.gl); // (apply comes last because we need the stride)
+
+		// Compiles shaders
+		self.program = Some(self.load_shaders(include_str!("../../../res/shaders.glsl")));
+
+		self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.gl.create_buffer().unwrap()));
+		self.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.gl.create_buffer().unwrap()));
+		self.gl.debug_message_callback(|_: u32, _: u32, _: u32, _: u32, msg: &str| println!("{}", msg));
+		self.gl.enable(glow::BLEND);
+		self.gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_COLOR);
 
 		self
 	}
 
 	unsafe fn draw(&mut self) {
 		self.gl.clear(glow::COLOR_BUFFER_BIT);
-		self.gl.draw_arrays(glow::TRIANGLES, 0, 3);
+		self.gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, core::slice::from_raw_parts(self.shapedata.as_ptr() as *const u8,
+			self.shapedata.len() * core::mem::size_of::<ShapeData>()), glow::DYNAMIC_DRAW);
+		self.gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, core::slice::from_raw_parts(self.indexdata.as_ptr() as *const u8,
+			self.indexdata.len() * core::mem::size_of::<u32>()), glow::DYNAMIC_DRAW);
+		self.gl.draw_elements(glow::TRIANGLES, self.indexdata.len() as i32, glow::UNSIGNED_INT, 0);
+		self.shapedata.clear();
+		self.indexdata.clear();
 	}
 
 	unsafe fn destroy(&mut self) {
-		self.gl.delete_program(self.program.unwrap());
 		self.gl.delete_vertex_array(self.va.unwrap());
+		self.gl.delete_program(self.program.unwrap());
 	}
 
 	unsafe fn rect(&mut self, x: f32, y: f32, w: f32, h: f32) {
 		self.push_shape(Vec::<Vec2<f32>>::from([
-			Vec2::<f32> { x, y }
-		]), );
+			Vec2::<f32> { x, y },
+			Vec2::<f32> { x: x + w, y },
+			Vec2::<f32> { x, y: y + h },
+			Vec2::<f32> { x: x + w, y: y + h },
+		]), vec![0, 1, 2, 2, 1, 3], [1.0, 0.0, 0.0, 1.0]);
 	}
 }
 
+// #[test]
+// fn test_push() {
+// 	use glutin::event_loop::EventLoop;
+
+// 	unsafe {
+// 		let event_loop: EventLoop<()> = EventLoop::any_thread();
+// 		let window = glutin::ContextBuilder::new()
+// 			.build_windowed(
+// 				glutin::window::WindowBuilder::new().with_title("tetris").with_inner_size(glutin::dpi::LogicalSize::new(600., 400.)), &event_loop
+// 			).unwrap().make_current().unwrap();
+
+// 		// Sets everything up
+// 		let mut gl = GLContext::new(&window);
+
+// 		// Creates a vertex array and loads shaders
+// 		gl.va = Some(gl.gl.create_vertex_array().expect("bruh why won't VA form"));
+// 		gl.program = Some(gl.load_shaders(include_str!("../../../res/shaders.glsl")));
+
+// 		// Binds the vertex array so we can put the layout on it
+// 		gl.gl.bind_vertex_array(gl.va);
+
+// 		// Makes a new layout, and then adds it thru gl attrib array ptrs
+// 		let mut layout = Layout::new();
+// 		layout.addf(2).addf(2).addf(4);
+// 		print!("{:?}", layout);
+// 		layout.apply(&gl.gl); // (apply comes last because we need the stride)
+
+// 		gl.gl.bind_buffer(glow::ARRAY_BUFFER, Some(gl.gl.create_buffer().unwrap()));
+// 		gl.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(gl.gl.create_buffer().unwrap()));
+
+// 		gl.rect(0.0, 0.0, 0.5, 0.5);
+// 		for i in gl.shapedata.iter() { print!("{:?}", i); }
+// 	}
+// }
