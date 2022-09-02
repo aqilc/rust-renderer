@@ -1,18 +1,7 @@
 use fontdue::*;
 use std::collections::HashMap;
 use std::fs::*;
-
-
-// ------- Vector Datatypes -------
-#[derive(Default, Copy, Clone)]
-pub struct Vec2<T> {
-	pub x: T,
-	pub y: T,
-}
-impl<T> Vec2<T> {
-	pub fn new(x: T, y: T) -> Vec2<T> { Vec2::<T> { x, y } }
-	pub fn set(&mut self, x: T, y: T) { self.x = x; self.y = y; }
-}
+use crate::graphics::api::api::Vec2;
 
 // ----- Texture datatypes ------
 #[derive(Copy, Clone)]
@@ -28,9 +17,18 @@ impl Tex {
 		Tex { w, h, data: vec![0 as u8; w * h * channels as usize], channels }
 	}
 	pub fn resize(&mut self, w: usize, h: usize) -> &mut Self {
+		let from = self.data;
+		let to = vec![0 as u8; w * h * self.channels as usize];
+		for i in 0..self.h {
+			for j in 0..self.w {
+				to[i * self.w + j] = from[i * self.w + j];
+			}
+		}
+		self.w = w; self.h = h; self.data = to;
 		
 		self
 	}
+	pub fn draw(&mut self, ) {}
 }
 
 pub struct GlyphAttributes {
@@ -45,9 +43,10 @@ pub struct FontAtlas {
 impl FontAtlas {
 	const DEFAULTCHARS: &'static str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890[]{}()/\\=+\'\"<>,.-_?|!@#$%^&* :";
 	const STARTINGSIZE: &'static Vec2<u32> = &Vec2::<u32> { x: 128, y: 128 };
-	fn load(path: &str) -> Self {
+	fn load(path: &str) -> &mut Self {
 		let file: Vec<u8> = read(path).unwrap();
 		let font = Font::from_bytes(file, FontSettings::default()).unwrap();
+		
 		let mut lookup = HashMap::<String, Box<GlyphAttributes>>::new();
 		let mut places = Node::new(Vec2::<u32>::default(), *FontAtlas::STARTINGSIZE);
 		let mut tex = Tex::new(FontAtlas::STARTINGSIZE.x as usize, FontAtlas::STARTINGSIZE.y as usize, Channels::GRAYSCALE);
@@ -56,13 +55,15 @@ impl FontAtlas {
 			let (metrics, bitmap) = font.rasterize(i, 48.0);
 			let pos = places.pack(&Vec2::<u32> { x: metrics.width as u32, y: metrics.height as u32 }).unwrap().pos;
 
+			
+
 			lookup.insert(String::from(i), Box::<GlyphAttributes>::new(GlyphAttributes {
 				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
 				pos: Vec2::<u16> { x: pos.x as u16, y: pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
 			}));
 		}
 
-		FontAtlas { font, lookup, places, tex }
+		&mut FontAtlas { font, lookup, places, tex }
 	}
 	fn loadchar() {}
 }

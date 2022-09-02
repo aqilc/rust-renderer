@@ -9,6 +9,7 @@ edition = "2021"
 fontdue = "0.7.2"
 glow = "0.11.2"
 glutin = "0.29.1"
+ttf-parser = "0.15.2"
 # Features:
 # - bundled
 # - c_vec

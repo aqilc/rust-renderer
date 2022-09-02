@@ -1066,6 +1066,7 @@ dependencies = [
  "glow",
  "glutin",
  "rand",
+ "ttf-parser",
 ]
 
 [[package]]

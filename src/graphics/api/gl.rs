@@ -13,6 +13,8 @@ pub struct ShapeData {
 pub struct GLContext {
 	pub gl: glow::Context,
 	pub va: Option<glow::VertexArray>,
+	pub vb: Option<glow::Buffer>,
+	pub eb: Option<glow::Buffer>,
 	pub program: Option<glow::Program>,
 
 	pub uniforms: HashMap<String, i32>,
@@ -67,7 +69,7 @@ const TEXCOORDS: [Vec2<f32>; 4] = [Vec2::<f32>::new(1.0 - 2.5 / TEXTUREW, 1.0 - 
 impl GLContext {
 	pub unsafe fn new(window: &glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>) -> Self {
 		GLContext {
-			gl: glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _), va: None, program: None,
+			gl: glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _), va: None, vb: None, eb: None, program: None,
 			shapedata: Vec::<ShapeData>::new(),
 			indexdata: Vec::<u32>::new(),
 			uniforms: HashMap::<String, i32>::new() }
@@ -151,8 +153,10 @@ impl GraphicsAPI for GLContext {
 		// Compiles shaders
 		self.program = Some(self.load_shaders(include_str!("../../../res/shaders.glsl")));
 
-		self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(self.gl.create_buffer().unwrap()));
-		self.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, Some(self.gl.create_buffer().unwrap()));
+		self.eb = Some(self.gl.create_buffer().unwrap());
+		self.vb = Some(self.gl.create_buffer().unwrap());
+		self.gl.bind_buffer(glow::ARRAY_BUFFER, self.eb);
+		self.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, self.vb);
 		self.gl.debug_message_callback(|_: u32, _: u32, _: u32, _: u32, msg: &str| println!("{}", msg));
 		self.gl.enable(glow::BLEND);
 		self.gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_COLOR);
@@ -162,6 +166,8 @@ impl GraphicsAPI for GLContext {
 
 	unsafe fn draw(&mut self) {
 		self.gl.clear(glow::COLOR_BUFFER_BIT);
+		self.gl.bind_buffer(glow::ARRAY_BUFFER, self.eb);
+		self.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, self.vb);
 		self.gl.buffer_data_u8_slice(glow::ARRAY_BUFFER, core::slice::from_raw_parts(self.shapedata.as_ptr() as *const u8,
 			self.shapedata.len() * core::mem::size_of::<ShapeData>()), glow::DYNAMIC_DRAW);
 		self.gl.buffer_data_u8_slice(glow::ELEMENT_ARRAY_BUFFER, core::slice::from_raw_parts(self.indexdata.as_ptr() as *const u8,
