@@ -24,6 +24,8 @@ fn main() {
 				Event::LoopDestroyed => { return; }
 				Event::MainEventsCleared => { window.window().request_redraw(); }
 				Event::RedrawRequested(_) => {
+					g.rect(0.0, 0.0, 0.5, 0.5);
+					g.draw();
 					window.swap_buffers().unwrap();
 				}
 				Event::WindowEvent { ref event, .. } => match event {

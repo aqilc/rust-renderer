@@ -7,4 +7,4 @@ pub mod gl;
 //pub mod vulkan;
 
 // Text/texture loading
-pub mod tex;
+//pub mod tex;
