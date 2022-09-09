@@ -1,3 +1,5 @@
+#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::*;
 
@@ -9,8 +11,7 @@ use graphics::api::gl::GLContext;
 fn main() {
 	unsafe {
 		let event_loop: EventLoop<()> = EventLoop::new();
-		let window = glutin::ContextBuilder::new()
-			.build_windowed(
+		let window = glutin::ContextBuilder::new().build_windowed(
 				glutin::window::WindowBuilder::new().with_title("tetris").with_inner_size(glutin::dpi::LogicalSize::new(600., 400.)), &event_loop
 			).unwrap().make_current().unwrap();
 
@@ -19,7 +20,7 @@ fn main() {
 		g.setup();
 
 		event_loop.run(move |event, _, control_flow| {
-			*control_flow = ControlFlow::Wait;
+			//*control_flow = ControlFlow::Wait;
 			match event {
 				Event::LoopDestroyed => { return; }
 				Event::MainEventsCleared => { window.window().request_redraw(); }
@@ -30,7 +31,6 @@ fn main() {
 				}
 				Event::WindowEvent { ref event, .. } => match event {
 					WindowEvent::Resized(physical_size) => {
-						g.draw();
 						window.resize(*physical_size);
 					}
 					WindowEvent::CloseRequested => {
