@@ -17,8 +17,8 @@ impl Tex {
 		Tex { w, h, data: vec![0 as u8; w * h * channels as usize], channels }
 	}
 	pub fn resize(&mut self, w: usize, h: usize) -> &mut Self {
-		let from = self.data;
-		let to = vec![0 as u8; w * h * self.channels as usize];
+		let from = &self.data;
+		let mut to = vec![0 as u8; w * h * self.channels as usize];
 		for i in 0..self.h {
 			for j in 0..self.w {
 				to[i * self.w + j] = from[i * self.w + j];
@@ -28,44 +28,57 @@ impl Tex {
 		
 		self
 	}
-	pub fn draw(&mut self, ) {}
+	pub fn draw(&mut self, data: Vec<u8>, pos: Vec2<usize>, height: usize) {
+		for y in 0..height {
+			for x in 0..(data.len() / height) {
+				self.data[(y + pos.y) * height + (pos.x + x)] = data[y * height + x];
+			}
+		}
+	}
 }
 
 pub struct GlyphAttributes {
 	pos: Vec2<u16>, size: Vec2<u16>, advance_x: u32
 }
 pub struct FontAtlas {
-	tex: Tex,
+	pub tex: Tex,
+	pub fonts: HashMap<String, Box<Font>>,
 	lookup: HashMap<String, Box<GlyphAttributes>>,
-	font: Font,
 	places: Node,
 }
-impl FontAtlas {
+impl<'a> FontAtlas {
 	const DEFAULTCHARS: &'static str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890[]{}()/\\=+\'\"<>,.-_?|!@#$%^&* :";
 	const STARTINGSIZE: &'static Vec2<u32> = &Vec2::<u32> { x: 128, y: 128 };
-	fn load(path: &str) -> &mut Self {
+	pub fn new() -> Self {
+		FontAtlas { fonts: HashMap::<String, Box<Font>>::new(),
+			lookup: HashMap::<String, Box<GlyphAttributes>>::new(),
+			places: Node::new(Vec2::<u32>::default(), *FontAtlas::STARTINGSIZE),
+			tex: Tex::new(FontAtlas::STARTINGSIZE.x as usize, FontAtlas::STARTINGSIZE.y as usize, Channels::GRAYSCALE) }
+	}
+
+	// Loads all of the default chars for a font.
+	pub fn load(&mut self, name: &str, path: &str) {
 		let file: Vec<u8> = read(path).unwrap();
-		let font = Font::from_bytes(file, FontSettings::default()).unwrap();
-		
-		let mut lookup = HashMap::<String, Box<GlyphAttributes>>::new();
-		let mut places = Node::new(Vec2::<u32>::default(), *FontAtlas::STARTINGSIZE);
-		let mut tex = Tex::new(FontAtlas::STARTINGSIZE.x as usize, FontAtlas::STARTINGSIZE.y as usize, Channels::GRAYSCALE);
+		self.fonts.insert(String::from(name), Box::new(Font::from_bytes(file, FontSettings::default()).unwrap()));
 		
 		for i in FontAtlas::DEFAULTCHARS.chars() {
-			let (metrics, bitmap) = font.rasterize(i, 48.0);
-			let pos = places.pack(&Vec2::<u32> { x: metrics.width as u32, y: metrics.height as u32 }).unwrap().pos;
-
-			
-
-			lookup.insert(String::from(i), Box::<GlyphAttributes>::new(GlyphAttributes {
-				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
-				pos: Vec2::<u16> { x: pos.x as u16, y: pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
-			}));
+			self.loadchar(i, name);
 		}
-
-		&mut FontAtlas { font, lookup, places, tex }
 	}
-	fn loadchar() {}
+	pub fn loadchar(&mut self, character: char, font: &str) -> Result<(), String> {
+		let (metrics, bitmap) = self.fonts[font].rasterize(character, 48.0);
+		if let Some(pos) = self.places.pack(&Vec2::<u32> { x: metrics.width as u32, y: metrics.height as u32 }) {
+
+			// Inserts the bitmap into the texture at the specified coords
+			self.tex.draw(bitmap, Vec2::<usize> { x: pos.pos.x as usize, y: pos.pos.y as usize }, pos.size.y as usize);
+
+			// Inserts the character into the hashmap so we can look it up later
+			self.lookup.insert(String::from(character), Box::<GlyphAttributes>::new(GlyphAttributes {
+				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
+				pos: Vec2::<u16> { x: pos.pos.x as u16, y: pos.pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
+			}));
+		} else { return Err(format!("Cannot insert character {} into this map because it doesn't fit.", character)); }
+	}
 }
 
 
@@ -152,4 +165,9 @@ fn texture_pack() {
 		else if root.pack(&nodes[cur]).is_none() { println!("Filled at {} nodes", cur); break; }
 		cur += 1;
 	}
+}
+
+#[test]
+fn texture_atlas() {
+	
 }
