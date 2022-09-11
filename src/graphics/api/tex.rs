@@ -38,7 +38,7 @@ impl Tex {
 }
 
 pub struct GlyphAttributes {
-	pos: Vec2<u16>, size: Vec2<u16>, advance_x: u32
+	pub pos: Vec2<u16>, pub size: Vec2<u16>, pub advance_x: u32
 }
 pub struct FontAtlas {
 	pub tex: Tex,
@@ -62,7 +62,10 @@ impl<'a> FontAtlas {
 		self.fonts.insert(String::from(name), Box::new(Font::from_bytes(file, FontSettings::default()).unwrap()));
 		
 		for i in FontAtlas::DEFAULTCHARS.chars() {
-			self.loadchar(i, name);
+			if let error = self.loadchar(i, name).is_err() {
+				println!("{}", error);
+				return;
+			}
 		}
 	}
 	pub fn loadchar(&mut self, character: char, font: &str) -> Result<(), String> {
@@ -77,6 +80,8 @@ impl<'a> FontAtlas {
 				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
 				pos: Vec2::<u16> { x: pos.pos.x as u16, y: pos.pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
 			}));
+			
+			return Ok(());
 		} else { return Err(format!("Cannot insert character {} into this map because it doesn't fit.", character)); }
 	}
 }

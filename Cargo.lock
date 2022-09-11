@@ -1067,6 +1067,7 @@ dependencies = [
  "glutin",
  "rand",
  "ttf-parser",
+ "winit",
 ]
 
 [[package]]

@@ -1,6 +1,7 @@
 
 // ------- Vector Datatypes -------
 #[derive(Default, Copy, Clone, Debug)]
+#[repr(C)]
 pub struct Vec2<T> {
 	pub x: T,
 	pub y: T,
