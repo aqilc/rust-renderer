@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use glow::*;
-use crate::graphics::api::api::GraphicsAPI;
-use crate::graphics::api::api::Vec2;
+use crate::graphics::api::GraphicsAPI;
+use crate::graphics::api::Vec2;
 
 #[derive(Debug)]
 pub struct ShapeData {
 	pub pos: Vec2<f32>,
 	pub tex: Vec2<f32>,
 	pub col: [f32; 4]
-	
 }
 pub struct GLContext {
 	pub gl: glow::Context,
@@ -20,6 +19,7 @@ pub struct GLContext {
 	pub uniforms: HashMap<String, i32>,
 	pub shapedata: Vec<ShapeData>,
 	pub indexdata: Vec<u32>,
+    pub curfill: [f32; 4]
 }
 
 
@@ -72,14 +72,16 @@ impl GLContext {
 			gl: glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _), va: None, vb: None, eb: None, program: None,
 			shapedata: Vec::<ShapeData>::new(),
 			indexdata: Vec::<u32>::new(),
-			uniforms: HashMap::<String, i32>::new() }
+			uniforms: HashMap::<String, i32>::new(),
+            curfill: [1.0, 0.0, 0.0, 1.0]
+        }
 	}
 
 	pub fn push_shape(&mut self, points: Vec<Vec2<f32>>, index: Vec<u32>, color: [f32; 4]) -> &mut Self {
 
 		// Stores length of shapedata so we can add it to each of the indexes later
 		let len = self.shapedata.len();
-		
+
 		// Adds every point into the shapedata buffer
 		for i in 0..points.len() {
 			self.shapedata.push(ShapeData {
@@ -92,10 +94,10 @@ impl GLContext {
 		// Adds every index to the whole index buffer, and since we're appending the shapes, we're adding the length of the shape buffer so the indexes are referencing the proper shapes
 		for i in 0..index.len() {
 			self.indexdata.push(len as u32 + index[i]); }
-		
+
 		self
 	}
-	
+
 	pub unsafe fn load_shaders(self: &Self, file: &str) -> glow::Program {
 
 		// Splits the file up by the string "# frag"
@@ -106,7 +108,7 @@ impl GLContext {
 
 		// Creates a new program so we can return
 		let program = self.gl.create_program().expect("bruh i can't even create a program wtf is this");
-		
+
 		// Compiles shaders
 		let compile = |t: u32, s: &str| -> glow::Shader {
 			let shader = self.gl.create_shader(t).expect("bruh can't even create shaders bad");
@@ -151,7 +153,7 @@ impl GraphicsAPI for GLContext {
 		Layout::new().addf(2).addf(2).addf(4).apply(&self.gl); // (apply comes last because we need the stride)
 
 		// Compiles shaders
-		self.program = Some(self.load_shaders(include_str!("../../../res/shaders.glsl")));
+		self.program = Some(self.load_shaders(include_str!("../../res/shaders.glsl")));
 
 		self.eb = Some(self.gl.create_buffer().unwrap());
 		self.vb = Some(self.gl.create_buffer().unwrap());

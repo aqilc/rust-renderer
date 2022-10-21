@@ -1,7 +1,7 @@
 use fontdue::*;
 use std::collections::HashMap;
 use std::fs::*;
-use crate::graphics::api::api::Vec2;
+use crate::graphics::api::Vec2;
 
 // ----- Texture datatypes ------
 #[derive(Copy, Clone)]
@@ -25,7 +25,6 @@ impl Tex {
 			}
 		}
 		self.w = w; self.h = h; self.data = to;
-		
 		self
 	}
 	pub fn draw(&mut self, data: Vec<u8>, pos: Vec2<usize>, height: usize) {
@@ -38,8 +37,9 @@ impl Tex {
 }
 
 pub struct GlyphAttributes {
-	pos: Vec2<u16>, size: Vec2<u16>, advance_x: u32
+	pub pos: Vec2<u16>, pub size: Vec2<u16>, pub advance_x: u32
 }
+
 pub struct FontAtlas {
 	pub tex: Tex,
 	pub fonts: HashMap<String, Box<Font>>,
@@ -60,9 +60,11 @@ impl<'a> FontAtlas {
 	pub fn load(&mut self, name: &str, path: &str) {
 		let file: Vec<u8> = read(path).unwrap();
 		self.fonts.insert(String::from(name), Box::new(Font::from_bytes(file, FontSettings::default()).unwrap()));
-		
+
 		for i in FontAtlas::DEFAULTCHARS.chars() {
-			self.loadchar(i, name);
+			if let Err(bruh) = self.loadchar(i, name) {
+                println!("{}", bruh);
+            }
 		}
 	}
 	pub fn loadchar(&mut self, character: char, font: &str) -> Result<(), String> {
@@ -77,6 +79,8 @@ impl<'a> FontAtlas {
 				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
 				pos: Vec2::<u16> { x: pos.pos.x as u16, y: pos.pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
 			}));
+
+            return Ok(());
 		} else { return Err(format!("Cannot insert character {} into this map because it doesn't fit.", character)); }
 	}
 }
@@ -104,7 +108,7 @@ impl Node {
 			// If we're the exact match
 			if self.size.x == size.x && self.size.y == size.y { self.filled = true; return Some(self); }
 
-			
+
 			// First node is always going to be positioned at the parent node
 			let c1p = self.pos;
 
@@ -153,7 +157,7 @@ fn texture_pack() {
 	let mut root = Node::new(Vec2::default(), Vec2::<u32> { x: 100, y: 100 });
 	let mut nodes = vec![Vec2::<u32>::new(20, 30)];
 	let mut cur = 1;
-	
+
 	assert!(root.pack(&nodes[0]).is_some());
 
 	for _ in 0..30 {
@@ -169,5 +173,5 @@ fn texture_pack() {
 
 #[test]
 fn texture_atlas() {
-	
+
 }

@@ -2,8 +2,8 @@ use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::*;
 
 pub mod graphics;
-use graphics::api::api::GraphicsAPI;
-use graphics::api::gl::GLContext;
+use graphics::api::GraphicsAPI;
+use graphics::gl::GLContext;
 
 // main
 fn main() {
