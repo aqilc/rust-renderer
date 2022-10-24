@@ -22,11 +22,8 @@ pub struct GLContext {
 	pub shapedata: Vec<ShapeData>,
 	prev_shp_size: usize,
 	pub indexdata: Vec<u32>,
-<<<<<<< HEAD:src/graphics/gl.rs
-    pub curfill: [f32; 4]
-=======
+    pub curfill: [f32; 4],
 	prev_ind_size: usize,
->>>>>>> 9a0c163b2cc7f895cc91b88985d5f50ce20d2171:src/graphics/api/gl.rs
 }
 
 
@@ -83,12 +80,8 @@ impl GLContext {
 			shapedata: Vec::<ShapeData>::new(),
 			indexdata: Vec::<u32>::new(),
 			uniforms: HashMap::<String, i32>::new(),
-<<<<<<< HEAD:src/graphics/gl.rs
-            curfill: [1.0, 0.0, 0.0, 1.0]
-        }
-=======
+            curfill: [1.0, 0.0, 0.0, 1.0],
 			prev_ind_size: 0, prev_shp_size: 0 }
->>>>>>> 9a0c163b2cc7f895cc91b88985d5f50ce20d2171:src/graphics/api/gl.rs
 	}
 
 	pub fn push_shape(&mut self, points: Vec<Vec2<f32>>, index: Vec<u32>, color: [f32; 4]) -> &mut Self {
@@ -171,9 +164,9 @@ impl GraphicsAPI for GLContext {
 		// Compiles shaders
 		if cfg!(debug_assertions) {
 			// Reads file dynamically if in debug mode, so we don't have to recompile when editing shaders
-			self.program = Some(self.load_shaders(std::fs::read_to_string(r"D:\projects\rust\tetris\res\shaders.glsl").unwrap().as_str()))
+			self.program = Some(self.load_shaders(std::fs::read_to_string(r".\res\shaders.glsl").unwrap().as_str()))
 		} else {
-			self.program = Some(self.load_shaders(include_str!("../../../res/shaders.glsl")));
+			self.program = Some(self.load_shaders(include_str!("../../res/shaders.glsl")));
 		}
 
 		// I FORGOT THIS INITIALLY LOL WTF
@@ -186,21 +179,6 @@ impl GraphicsAPI for GLContext {
 
 		// Makes a new layout, and then adds it thru gl attrib array ptrs
 		Layout::new().addf(2).addf(2).addf(4).apply(&self.gl); // (apply comes last because we need the stride)
-
-<<<<<<< HEAD:src/graphics/gl.rs
-		// Compiles shaders
-		self.program = Some(self.load_shaders(include_str!("../../res/shaders.glsl")));
-
-		self.eb = Some(self.gl.create_buffer().unwrap());
-		self.vb = Some(self.gl.create_buffer().unwrap());
-		self.gl.bind_buffer(glow::ARRAY_BUFFER, self.eb);
-		self.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, self.vb);
-		self.gl.debug_message_callback(|_: u32, _: u32, _: u32, _: u32, msg: &str| println!("{}", msg));
-		self.gl.enable(glow::BLEND);
-		self.gl.blend_func(glow::SRC_ALPHA, glow::ONE_MINUS_SRC_COLOR);
-
-=======
->>>>>>> 9a0c163b2cc7f895cc91b88985d5f50ce20d2171:src/graphics/api/gl.rs
 		self
 	}
 
