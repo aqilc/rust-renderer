@@ -62,9 +62,16 @@ impl<'a> FontAtlas {
 		self.fonts.insert(String::from(name), Box::new(Font::from_bytes(file, FontSettings::default()).unwrap()));
 
 		for i in FontAtlas::DEFAULTCHARS.chars() {
+<<<<<<< HEAD:src/graphics/tex.rs
 			if let Err(bruh) = self.loadchar(i, name) {
                 println!("{}", bruh);
             }
+=======
+			if let error = self.loadchar(i, name).is_err() {
+				println!("{}", error);
+				return;
+			}
+>>>>>>> 9a0c163b2cc7f895cc91b88985d5f50ce20d2171:src/graphics/api/tex.rs
 		}
 	}
 	pub fn loadchar(&mut self, character: char, font: &str) -> Result<(), String> {
@@ -79,8 +86,13 @@ impl<'a> FontAtlas {
 				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
 				pos: Vec2::<u16> { x: pos.pos.x as u16, y: pos.pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
 			}));
+<<<<<<< HEAD:src/graphics/tex.rs
 
             return Ok(());
+=======
+			
+			return Ok(());
+>>>>>>> 9a0c163b2cc7f895cc91b88985d5f50ce20d2171:src/graphics/api/tex.rs
 		} else { return Err(format!("Cannot insert character {} into this map because it doesn't fit.", character)); }
 	}
 }
