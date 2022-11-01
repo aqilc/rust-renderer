@@ -16,4 +16,6 @@ pub trait GraphicsAPI {
 	unsafe fn draw(&mut self);
 	unsafe fn destroy(&mut self);
 	unsafe fn rect(&mut self, x: f32, y: f32, w: f32, h: f32);
+  unsafe fn load_image(&mut self, file: &str) -> Result<u8, image::ImageError>;
+	unsafe fn load_font(&mut self) -> u8;
 }

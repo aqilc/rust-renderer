@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use glow::*;
 use crate::graphics::api::GraphicsAPI;
 use crate::graphics::api::Vec2;
+//use image::io;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -21,9 +22,11 @@ pub struct GLContext {
 	pub uniforms: HashMap<String, i32>,
 	pub shapedata: Vec<ShapeData>,
 	prev_shp_size: usize,
-	pub indexdata: Vec<u32>,
-    pub curfill: [f32; 4],
-	prev_ind_size: usize,
+  pub indexdata: Vec<u32>,
+  prev_ind_size: usize,
+  pub curfill: [f32; 4],
+
+	pub textures: Vec<glow::NativeTexture>,
 }
 
 
@@ -81,7 +84,24 @@ impl GLContext {
 			indexdata: Vec::<u32>::new(),
 			uniforms: HashMap::<String, i32>::new(),
             curfill: [1.0, 0.0, 0.0, 1.0],
-			prev_ind_size: 0, prev_shp_size: 0 }
+			prev_ind_size: 0, prev_shp_size: 0, textures: Vec::<glow::NativeTexture>::new() }
+	}
+
+	pub unsafe fn texture(&mut self, buf: Vec<u8>, width: i32, format: i32) -> u8 /*the id*/ {
+		let texture = self.gl.create_texture().ok();
+		self.gl.bind_texture(glow::TEXTURE_2D, texture);
+
+		// Sets the default texture params, might add a way to change them later
+		self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
+		self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, glow::LINEAR as i32);
+		self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+		self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
+
+		self.gl.tex_image_2d(glow::TEXTURE_2D, 0, format, width, buf.len() as i32 / width, 0, format.try_into().unwrap(),
+			glow::UNSIGNED_BYTE, Some(core::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * core::mem::size_of::<u8>())));
+
+		self.textures.push(texture.unwrap());
+		(self.textures.len() - 1) as u8
 	}
 
 	pub fn push_shape(&mut self, points: Vec<Vec2<f32>>, index: Vec<u32>, color: [f32; 4]) -> &mut Self {
@@ -230,6 +250,16 @@ impl GraphicsAPI for GLContext {
 			Vec2::<f32> { x, y: y + h },
 			Vec2::<f32> { x: x + w, y: y + h },
 		]), vec![0, 1, 2, 2, 1, 3], [1.0, 0.0, 0.0, 1.0]);
+	}
+
+  unsafe fn load_image(&mut self, file: &str) -> Result<u8, image::ImageError> {
+    let img_raw = image::io::Reader::open(file)?.decode()?; // stupid rust rules.. why tf do you need to drop values bruh just keep them around so i don't need random unnecessary variables and spend like 10 mins figuring out stupid compiler messages
+    let img = img_raw.as_rgb8().unwrap(); // rust so stupid sometimes ughhhhhh
+		Ok(self.texture(img.to_vec(), img.width() as i32, glow::RGB8 as i32))
+	}
+
+	unsafe fn load_font(&mut self) -> u8 {
+		todo!();
 	}
 }
 

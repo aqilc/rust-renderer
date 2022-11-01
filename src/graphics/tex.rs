@@ -63,8 +63,8 @@ impl<'a> FontAtlas {
 
 		for i in FontAtlas::DEFAULTCHARS.chars() {
 			if let Err(bruh) = self.loadchar(i, name) {
-                println!("{}", bruh); return;
-            }
+				println!("{}", bruh); return;
+			}
 		}
 	}
 	pub fn loadchar(&mut self, character: char, font: &str) -> Result<(), String> {
@@ -79,7 +79,7 @@ impl<'a> FontAtlas {
 				size: Vec2::<u16> { x: metrics.width as u16, y: metrics.height as u16 },
 				pos: Vec2::<u16> { x: pos.pos.x as u16, y: pos.pos.y as u16 }, advance_x: (metrics.advance_width / 64.0) as u32
 			}));
-            return Ok(());
+      return Ok(());
 		} else { return Err(format!("Cannot insert character {} into this map because it doesn't fit.", character)); }
 	}
 }
