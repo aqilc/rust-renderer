@@ -18,6 +18,7 @@ fn main() {
 		// Sets everything up
 		let mut g: Box<dyn GraphicsAPI> = Box::<GLContext>::new(GLContext::new(&window));
 		g.setup();
+		let img = g.load_image("./res/bg.jpg").unwrap();
 
 		event_loop.run(move |event, _, control_flow| {
 			//*control_flow = ControlFlow::Wait;

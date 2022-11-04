@@ -16,6 +16,11 @@ pub trait GraphicsAPI {
 	unsafe fn draw(&mut self);
 	unsafe fn destroy(&mut self);
 	unsafe fn rect(&mut self, x: f32, y: f32, w: f32, h: f32);
+	unsafe fn get_screen_coords(&mut self);
   unsafe fn load_image(&mut self, file: &str) -> Result<u8, image::ImageError>;
 	unsafe fn load_font(&mut self) -> u8;
+}
+
+pub fn convert_to_sp<T: GraphicsAPI>(api: T, arr: Vec<f32>) -> Vec<f32> {
+	
 }

@@ -27,13 +27,20 @@ pub struct GLContext {
   pub curfill: [f32; 4],
 
 	pub textures: Vec<glow::NativeTexture>,
+
+	pub window_size: (u32, u32),
+}
+
+pub enum DrawPrimiv<'a> {
+	Text(&'a str),
+	Shape, Image
 }
 
 
 #[derive(Debug)]
 pub enum OpenGLType { Float, Integer, Char }
 #[derive(Debug)]
-pub struct LayoutType { typeenum: OpenGLType, count: u8 }
+pub struct LayoutType { typeenum: OpenGLType, count: i32 }
 #[derive(Debug)]
 pub struct Layout {
 	types: Vec<LayoutType>,
@@ -45,14 +52,20 @@ impl Layout {
 	pub const fn new() -> Self {
 		Layout { types: Vec::<LayoutType>::new(), stride: 0 }
 	}
-	pub fn addf(&mut self, count: u8) -> &mut Self {
+  pub fn addf(&mut self, count: i32) -> &mut Self {
 		self.types.push(LayoutType { count, typeenum: OpenGLType::Float });
-		self.stride += 4 * count as i32;
+		self.stride += 4 * count;
 		self
 	}
-	pub fn addi(&mut self, count: u8) -> &mut Self {
+  pub fn addi(&mut self, count: i32) -> &mut Self {
 		self.types.push(LayoutType { count, typeenum: OpenGLType::Integer });
-		self.stride += 4 * count as i32;
+		self.stride += 4 * count;
+		self
+	}
+
+  pub fn addc(&mut self, count: i32) -> &mut Self {
+		self.types.push(LayoutType { count, typeenum: OpenGLType::Char });
+		self.stride += 1 * count;
 		self
 	}
 
@@ -63,10 +76,11 @@ impl Layout {
 			gl.enable_vertex_attrib_array(index);
 			match &self.types[i] {
 				l @ LayoutType { typeenum: OpenGLType::Float, .. } => {
-					gl.vertex_attrib_pointer_f32(index, l.count as i32, glow::FLOAT, false, self.stride, offset); offset += 4 * l.count as i32; },
+					gl.vertex_attrib_pointer_f32(index, l.count, glow::FLOAT, false, self.stride, offset); offset += 4 * l.count; }
 				l @ LayoutType { typeenum: OpenGLType::Integer, .. } => {
-					gl.vertex_attrib_pointer_i32(index, l.count as i32, glow::INT, self.stride, offset); offset += 4 * l.count as i32; }
-				_ => { return; }
+					gl.vertex_attrib_pointer_i32(index, l.count, glow::INT, self.stride, offset); offset += 4 * l.count; }
+        l @ LayoutType { typeenum: OpenGLType::Char, .. } => {
+          gl.vertex_attrib_pointer_i32(index, l.count, glow::UNSIGNED_BYTE, self.stride, offset); offset += 1 * l.count; }
 			}
 		}
 	}
@@ -83,8 +97,9 @@ impl GLContext {
 			shapedata: Vec::<ShapeData>::new(),
 			indexdata: Vec::<u32>::new(),
 			uniforms: HashMap::<String, i32>::new(),
-            curfill: [1.0, 0.0, 0.0, 1.0],
-			prev_ind_size: 0, prev_shp_size: 0, textures: Vec::<glow::NativeTexture>::new() }
+      curfill: [1.0, 0.0, 0.0, 1.0],
+			prev_ind_size: 0, prev_shp_size: 0, textures: Vec::<glow::NativeTexture>::new(),
+			window_size: window.window().inner_size() }
 	}
 
 	pub unsafe fn texture(&mut self, buf: Vec<u8>, width: i32, format: i32) -> u8 /*the id*/ {
