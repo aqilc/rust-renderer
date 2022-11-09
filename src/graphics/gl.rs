@@ -19,6 +19,13 @@ pub struct GLContext {
 	pub ib: Option<glow::Buffer>,
 	pub program: Option<glow::Program>,
 
+	pub texloc: Option<&glow::UniformLocation>,
+
+	// For images :D
+	pub iva: Option<glow::VertexArray>,
+	pub ivb: Option<glow::Buffer>,
+	// pub iib: Option<glow::Buffer>,
+
 	pub uniforms: HashMap<String, i32>,
 	pub shapedata: Vec<ShapeData>,
 	prev_shp_size: usize,
@@ -28,7 +35,7 @@ pub struct GLContext {
 
 	pub textures: Vec<glow::NativeTexture>,
 
-	pub window_size: (u32, u32),
+	pub window_size: glutin::dpi::PhysicalSize<u32>,
 }
 
 pub enum DrawPrimiv<'a> {
@@ -93,7 +100,8 @@ const TEXCOORDS: [Vec2<f32>; 4] = [Vec2::<f32>::new(1.0 - 2.5 / TEXTUREW, 1.0 - 
 impl GLContext {
 	pub unsafe fn new(window: &glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>) -> Self {
 		GLContext {
-			gl: glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _), va: None, vb: None, ib: None, program: None,
+			gl: glow::Context::from_loader_function(|s| window.get_proc_address(s) as *const _),
+			va: None, vb: None, ib: None, program: None, iva: None, ivb: None, texloc: None,
 			shapedata: Vec::<ShapeData>::new(),
 			indexdata: Vec::<u32>::new(),
 			uniforms: HashMap::<String, i32>::new(),
@@ -102,7 +110,7 @@ impl GLContext {
 			window_size: window.window().inner_size() }
 	}
 
-	pub unsafe fn texture(&mut self, buf: Vec<u8>, width: i32, format: i32) -> u8 /*the id*/ {
+	pub unsafe fn texture(&mut self, buf: Vec<u8>, width: i32, format: i32) -> u32 /*the id*/ {
 		let texture = self.gl.create_texture().ok();
 		self.gl.bind_texture(glow::TEXTURE_2D, texture);
 
@@ -116,7 +124,13 @@ impl GLContext {
 			glow::UNSIGNED_BYTE, Some(core::slice::from_raw_parts(buf.as_ptr() as *const u8, buf.len() * core::mem::size_of::<u8>())));
 
 		self.textures.push(texture.unwrap());
-		(self.textures.len() - 1) as u8
+		(self.textures.len() - 1) as u32
+	}
+
+	pub unsafe fn set_texture(&mut self, tex: u32) {
+		// why is rust so painnnnnnnnnnnnnn like wth is it even making me do :cry:
+		if self.texloc.is_none() { self.texloc = (&self.gl.get_uniform_location(self.program.unwrap(), "u_tex")).as_ref(); }
+		self.gl.uniform_1_u32(self.texloc, tex);
 	}
 
 	pub fn push_shape(&mut self, points: Vec<Vec2<f32>>, index: Vec<u32>, color: [f32; 4]) -> &mut Self {
@@ -140,7 +154,14 @@ impl GLContext {
 		self
 	}
 
-	pub unsafe fn load_shaders(self: &Self, file: &str) -> glow::Program {
+	pub fn convert_screencoords(arr: Vec<i32>) {
+		let ret = Vec::<f32>::new();
+		for i in arr {
+			
+		}
+	}
+
+	pub unsafe fn load_shaders(&self, file: &str) -> glow::Program {
 
 		// Splits the file up by the string "# frag"
 		let (vert, frag): (&str, &str) = {
@@ -211,6 +232,7 @@ impl GraphicsAPI for GLContext {
 		self.ib = self.gl.create_buffer().ok();
 		self.gl.bind_buffer(glow::ARRAY_BUFFER, self.vb);
 		self.gl.bind_buffer(glow::ELEMENT_ARRAY_BUFFER, self.ib);
+		self.set_texture(0);
 
 		// Makes a new layout, and then adds it thru gl attrib array ptrs
 		Layout::new().addf(2).addf(2).addf(4).apply(&self.gl); // (apply comes last because we need the stride)
@@ -267,10 +289,19 @@ impl GraphicsAPI for GLContext {
 		]), vec![0, 1, 2, 2, 1, 3], [1.0, 0.0, 0.0, 1.0]);
 	}
 
-  unsafe fn load_image(&mut self, file: &str) -> Result<u8, image::ImageError> {
+  unsafe fn load_image(&mut self, file: &str) -> Result<u32, image::ImageError> {
     let img_raw = image::io::Reader::open(file)?.decode()?; // stupid rust rules.. why tf do you need to drop values bruh just keep them around so i don't need random unnecessary variables and spend like 10 mins figuring out stupid compiler messages
     let img = img_raw.as_rgb8().unwrap(); // rust so stupid sometimes ughhhhhh
 		Ok(self.texture(img.to_vec(), img.width() as i32, glow::RGB8 as i32))
+	}
+
+	unsafe fn image(&mut self, image: u32, x: i32, y: i32, w: i32, h: i32) {
+		self.set_texture(image);
+		if self.iva.is_none() { self.iva = self.gl.create_vertex_array().ok(); self.ivb = self.gl.create_buffer().ok(); }
+		let data = vec![x];
+		self.gl.buffer_sub_data_u8_slice(glow::ARRAY_BUFFER, core::slice::from_raw_parts())
+		self.gl.draw_elements(glow::TRIANGLES, 4, glow::UNSIGNED_INT, 0);
+		self.set_texture(0);
 	}
 
 	unsafe fn load_font(&mut self) -> u8 {
