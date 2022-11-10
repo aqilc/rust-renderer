@@ -1,5 +1,8 @@
 #![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
 
+#[macro_use] extern crate impl_ops;
+use std::ops;
+
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::*;
 

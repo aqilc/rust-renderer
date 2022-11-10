@@ -11,15 +11,23 @@ pub struct ShapeData {
 	pub tex: Vec2<f32>,
 	pub col: [f32; 4]
 }
+impl ShapeData {
+	fn new(pos: Vec2<f32>) -> Self {
 
-pub struct GLContext {
+		// oh my god rust doesn't even have basic ternary operators bruh im about to kms
+		ShapeData { pos, tex: Vec2 { x: if pos.x > 0.0 { 1.0 } else { 0.0 }, y: if pos.y > 0.0 {1.0} else {0.0} }, col: [1.0; 4] }
+	}
+}
+
+
+pub struct GLContext<'a> {
 	pub gl: glow::Context,
 	pub va: Option<glow::VertexArray>,
 	pub vb: Option<glow::Buffer>,
 	pub ib: Option<glow::Buffer>,
 	pub program: Option<glow::Program>,
 
-	pub texloc: Option<&glow::UniformLocation>,
+	pub texloc: Option<&'a glow::UniformLocation>,
 
 	// For images :D
 	pub iva: Option<glow::VertexArray>,
@@ -154,11 +162,14 @@ impl GLContext {
 		self
 	}
 
-	pub fn convert_screencoords(arr: Vec<i32>) {
-		let ret = Vec::<f32>::new();
+	pub fn convert_screencoords(&self, arr: Vec<Vec2<i32>>) -> Vec<Vec2<f32>> {
+		let ret = Vec::<Vec2<f32>>::with_capacity(arr.len());
+		let w = self.window_size.width as i32; let wf = w as f32;
+		let h = self.window_size.height as i32; let hf = h as f32;
 		for i in arr {
-			
+			ret.push(Vec2 { x: (i.x - w / 2) as f32 / wf, y: (i.y - h / 2) as f32 / wf });
 		}
+		ret
 	}
 
 	pub unsafe fn load_shaders(&self, file: &str) -> glow::Program {
@@ -298,8 +309,10 @@ impl GraphicsAPI for GLContext {
 	unsafe fn image(&mut self, image: u32, x: i32, y: i32, w: i32, h: i32) {
 		self.set_texture(image);
 		if self.iva.is_none() { self.iva = self.gl.create_vertex_array().ok(); self.ivb = self.gl.create_buffer().ok(); }
-		let data = vec![x];
-		self.gl.buffer_sub_data_u8_slice(glow::ARRAY_BUFFER, core::slice::from_raw_parts())
+		let data = self.convert_screencoords(vec![Vec2 { x, y }, Vec2 { x:w, y:h }]);
+		let upload = vec![ShapeData::new(data, ShapeData {}, ShapeData {}, ShapeData {}, ShapeData {}, ShapeData {},]
+		
+		self.gl.buffer_sub_data_u8_slice(glow::ARRAY_BUFFER, 0, core::slice::from_raw_parts());
 		self.gl.draw_elements(glow::TRIANGLES, 4, glow::UNSIGNED_INT, 0);
 		self.set_texture(0);
 	}
