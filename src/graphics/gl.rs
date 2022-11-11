@@ -20,14 +20,14 @@ impl ShapeData {
 }
 
 
-pub struct GLContext<'a> {
+pub struct GLContext {
 	pub gl: glow::Context,
 	pub va: Option<glow::VertexArray>,
 	pub vb: Option<glow::Buffer>,
 	pub ib: Option<glow::Buffer>,
 	pub program: Option<glow::Program>,
 
-	pub texloc: Option<&'a glow::UniformLocation>,
+	pub texloc: Option<glow::UniformLocation>,
 
 	// For images :D
 	pub iva: Option<glow::VertexArray>,
@@ -135,10 +135,10 @@ impl GLContext {
 		(self.textures.len() - 1) as u32
 	}
 
-	pub unsafe fn set_texture(&mut self, tex: u32) {
+	pub unsafe fn set_texture(&mut self, tex: i32) {
 		// why is rust so painnnnnnnnnnnnnn like wth is it even making me do :cry:
-		if self.texloc.is_none() { self.texloc = (&self.gl.get_uniform_location(self.program.unwrap(), "u_tex")).as_ref(); }
-		self.gl.uniform_1_u32(self.texloc, tex);
+		if self.texloc.is_none() { self.texloc = self.gl.get_uniform_location(self.program.unwrap(), "u_tex"); }
+		self.gl.uniform_1_i32((&self.texloc).as_ref(), tex);
 	}
 
 	pub fn push_shape(&mut self, points: Vec<Vec2<f32>>, index: Vec<u32>, color: [f32; 4]) -> &mut Self {
@@ -163,11 +163,11 @@ impl GLContext {
 	}
 
 	pub fn convert_screencoords(&self, arr: Vec<Vec2<i32>>) -> Vec<Vec2<f32>> {
-		let ret = Vec::<Vec2<f32>>::with_capacity(arr.len());
+		let mut ret = Vec::<Vec2<f32>>::with_capacity(arr.len());
 		let w = self.window_size.width as i32; let wf = w as f32;
 		let h = self.window_size.height as i32; let hf = h as f32;
 		for i in arr {
-			ret.push(Vec2 { x: (i.x - w / 2) as f32 / wf, y: (i.y - h / 2) as f32 / wf });
+			ret.push(Vec2 { x: (i.x - w / 2) as f32 / wf, y: (i.y - h / 2) as f32 / hf });
 		}
 		ret
 	}
@@ -303,21 +303,20 @@ impl GraphicsAPI for GLContext {
   unsafe fn load_image(&mut self, file: &str) -> Result<u32, image::ImageError> {
     let img_raw = image::io::Reader::open(file)?.decode()?; // stupid rust rules.. why tf do you need to drop values bruh just keep them around so i don't need random unnecessary variables and spend like 10 mins figuring out stupid compiler messages
     let img = img_raw.as_rgb8().unwrap(); // rust so stupid sometimes ughhhhhh
-		Ok(self.texture(img.to_vec(), img.width() as i32, glow::RGB8 as i32))
+		Ok(self.texture(img.to_vec(), img.width() as i32, glow::RGB as i32))
 	}
 
 	unsafe fn image(&mut self, image: u32, x: i32, y: i32, w: i32, h: i32) {
-		self.set_texture(image);
+		self.set_texture(image as i32);
 		if self.iva.is_none() { self.iva = self.gl.create_vertex_array().ok(); self.ivb = self.gl.create_buffer().ok(); }
-		let data = self.convert_screencoords(vec![Vec2 { x, y }, Vec2 { x:w, y:h }]);
-		let upload = vec![ShapeData::new(data, ShapeData {}, ShapeData {}, ShapeData {}, ShapeData {}, ShapeData {},]
-		
-		self.gl.buffer_sub_data_u8_slice(glow::ARRAY_BUFFER, 0, core::slice::from_raw_parts());
+		let data = self.convert_screencoords(vec![Vec2::<i32> { x, y }, Vec2 { x:x+w, y }, Vec2 { x, y:y+h }, Vec2 { x:x+h, y:y+h } ]);
+		let upload = vec![ShapeData::new(data[0]), ShapeData::new(data[1]), ShapeData::new(data[2]), ShapeData::new(data[2]), ShapeData::new(data[3]), ShapeData::new(data[1])];
+		self.gl.buffer_sub_data_u8_slice(glow::ARRAY_BUFFER, 0, core::slice::from_raw_parts(upload.as_ptr() as *const u8, core::mem::size_of::<ShapeData>() * 6));
 		self.gl.draw_elements(glow::TRIANGLES, 4, glow::UNSIGNED_INT, 0);
 		self.set_texture(0);
 	}
 
-	unsafe fn load_font(&mut self) -> u8 {
+	unsafe fn load_font(&mut self) -> u32 {
 		todo!();
 	}
 }
